@@ -113,6 +113,9 @@ df_long <- df_raw %>%
   ) %>%
   filter(!is.na(error), !is.na(est), !is.na(truth))
 
+available_N <- sort(unique(df_long$N))
+available_T2 <- sort(unique(df_long$T))
+
 # ------------------------------------------------------------
 # 2. UI
 # ------------------------------------------------------------
@@ -355,6 +358,34 @@ ui <- fluidPage(
                          status   = "primary",
                          inline   = TRUE
                        )
+                   ),
+                   
+                   hr(style = "border-color: #e9ecef;"),
+                   
+                   h4("Sample Size Filters", class = "control-label"),
+                   div(class = "param-control-section",
+                       h5("Cross-sectional Units (N)",
+                          style = "color: #000000; font-weight: 700; margin-bottom: 15px;"),
+                       awesomeCheckboxGroup(
+                         "N_filter",
+                         NULL,
+                         choices  = available_N,
+                         selected = available_N,
+                         status   = "primary",
+                         inline   = TRUE
+                       )
+                   ),
+                   div(class = "param-control-section",
+                       h5("Time Periods (T)",
+                          style = "color: #000000; font-weight: 700; margin-bottom: 15px;"),
+                       awesomeCheckboxGroup(
+                         "T_filter",
+                         NULL,
+                         choices  = available_T2,
+                         selected = available_T2,
+                         status   = "primary",
+                         inline   = TRUE
+                       )
                    )
                )
            ),
@@ -563,28 +594,55 @@ ui <- fluidPage(
                                             selected = "RMSE")
                          ),
                          column(3,
+                                selectInput("comp_plot_type", "Plot type:",
+                                            choices = c("Boxplot" = "box",
+                                                        "Bar plot" = "bar",
+                                                        "Line plot" = "line"),
+                                            selected = "box")
+                         ),
+                         column(3,
                                 selectInput("comp_x", "Horizontal axis:",
-                                            choices = c("N"     = "N_fac",
-                                                        "Delta" = "delta_fac",
-                                                        "Tau"   = "tau_fac",
-                                                        "Eta"   = "eta_fac"),
+                                            choices = c("N"      = "N_fac",
+                                                        "T"      = "T_fac",
+                                                        "N × T"  = "NT_fac",
+                                                        "Delta (δ)" = "delta_fac",
+                                                        "Tau (τ)"   = "tau_fac",
+                                                        "Eta (η)"   = "eta_fac"),
                                             selected = "N_fac")
                          ),
                          column(3,
-                                selectInput("comp_row", "Facet rows (vertical):",
-                                            choices = c("T" = "T_fac",
-                                                        "N" = "N_fac"),
+                                selectInput("comp_row", "Facet rows:",
+                                            choices = c("None"      = "none",
+                                                        "T"         = "T_fac",
+                                                        "N"         = "N_fac",
+                                                        "Delta (δ)" = "delta_fac",
+                                                        "Tau (τ)"   = "tau_fac",
+                                                        "Eta (η)"   = "eta_fac"),
                                             selected = "T_fac")
+                         )
+                       ),
+                       br(),
+                       fluidRow(
+                         column(4,
+                                selectInput("comp_auto", "Autocorrelation (line plot):",
+                                            choices = c("None"      = "none",
+                                                        "Delta (δ)" = "delta_fac",
+                                                        "Tau (τ)"   = "tau_fac",
+                                                        "Eta (η)"   = "eta_fac"),
+                                            selected = "delta_fac")
                          ),
-                         column(3,
+                         column(4,
                                 numericInput("comp_min", "Min Bias (Bias only):",
-                                             value = -2, min = -10, max = 0, step = 0.1),
+                                             value = -2, min = -10, max = 0, step = 0.1)
+                         ),
+                         column(4,
                                 numericInput("comp_cap", "Maximum Value:",
                                              value = 2, min = 0.1, max = 10, step = 0.1)
                          )
                        ),
-                       helpText("Comparative boxplots of summary metrics by chosen horizontal factor (N / δ / τ / η),",
-                                "with facet rows given by N or T, and parameters in columns. Values outside the limits are removed."),
+                       helpText("Boxplot mode: comparative boxplots by horizontal factor (N, T, N×T, δ, τ, η) and chosen facet rows.",
+                                "Bar plot mode: median metric by horizontal factor, with labels on top of bars.",
+                                "Line plot mode: mean metric vs chosen horizontal factor, lines can differ by autocorrelation level or method; facet rows also active."),
                        withSpinner(
                          plotOutput("comparison_plot", height = "600px"),
                          type = 4, color = "#007acc"
@@ -614,7 +672,8 @@ server <- function(input, output, session) {
   # ---- Reactive data ----
   df_filtered <- reactive({
     req(input$param, input$method,
-        input$delta_values, input$tau_values, input$eta_values)
+        input$delta_values, input$tau_values, input$eta_values,
+        input$N_filter, input$T_filter)
     
     result <- df_long %>%
       filter(
@@ -622,12 +681,13 @@ server <- function(input, output, session) {
         method     %in% input$method,
         true_delta %in% input$delta_values,
         true_tau   %in% input$tau_values,
-        true_eta   %in% input$eta_values
+        true_eta   %in% input$eta_values,
+        N          %in% input$N_filter,
+        T          %in% input$T_filter
       )
     
     if (nrow(result) == 0) return(data.frame())
     
-    # Relevel parameter order to follow user selection
     sel <- input$param
     result %>%
       mutate(
@@ -651,7 +711,8 @@ server <- function(input, output, session) {
         SD     = sd(error, na.rm = TRUE),
         n_obs  = n(),
         .groups = "drop"
-      )
+      ) %>%
+      mutate(NT_fac = factor(NT))
   })
   
   line_data_nt_reactive <- reactive({
@@ -727,8 +788,12 @@ server <- function(input, output, session) {
   })
   
   # ---- Summary metrics boxes ----
-  output$param_count <- renderText({ if (length(input$param)  == 0) "0" else as.character(length(input$param)) })
-  output$method_count <- renderText({ if (length(input$method) == 0) "0" else as.character(length(input$method)) })
+  output$param_count <- renderText({
+    if (length(input$param)  == 0) "0" else as.character(length(input$param))
+  })
+  output$method_count <- renderText({
+    if (length(input$method) == 0) "0" else as.character(length(input$method))
+  })
   
   output$scenario_count <- renderText({
     dat <- df_filtered()
@@ -828,7 +893,7 @@ server <- function(input, output, session) {
       dat_capped <- dat_clean %>%
         filter(.data[[metric]] >= lower, .data[[metric]] <= upper) %>%
         mutate(PlotValue = .data[[metric]])
-      y_limits <- c(lower, upper)
+      y_limits  <- c(lower, upper)
       fill_limits <- c(lower, upper)
     } else {
       lower <- 0
@@ -836,7 +901,7 @@ server <- function(input, output, session) {
       dat_capped <- dat_clean %>%
         filter(.data[[metric]] >= lower, .data[[metric]] <= upper) %>%
         mutate(PlotValue = .data[[metric]])
-      y_limits <- c(lower, upper)
+      y_limits  <- c(lower, upper)
       fill_limits <- c(lower, upper)
     }
     
@@ -897,7 +962,7 @@ server <- function(input, output, session) {
         p <- p + facet_grid(eta_fac ~ param_lab)
       }
       
-    } else { # line
+    } else { # line (Performance Metrics tab)
       line_data <- line_data_nt_reactive() %>%
         filter(!is.na(.data[[metric]]))
       
@@ -936,9 +1001,9 @@ server <- function(input, output, session) {
     p
   }
   
-  # Helper: comparison plot (Comparative Analysis tab)
-  make_comparison_plot <- function(dat, metric, method_colors,
-                                   x_var, row_var, cap_min, cap_max) {
+  # Helper: comparison boxplot (Comparative Analysis tab)
+  make_comparison_box_plot <- function(dat, metric, method_colors,
+                                       x_var, row_var, cap_min, cap_max) {
     
     dat_capped <- dat %>%
       filter(!is.na(.data[[metric]]))
@@ -962,6 +1027,8 @@ server <- function(input, output, session) {
     
     x_lab_map <- c(
       N_fac     = "N",
+      T_fac     = "T",
+      NT_fac    = "N × T",
       delta_fac = "Delta (δ)",
       tau_fac   = "Tau (τ)",
       eta_fac   = "Eta (η)"
@@ -977,10 +1044,10 @@ server <- function(input, output, session) {
         x = x_lab,
         y = metric,
         fill = "Method",
-        title = paste("Comparative Analysis of", metric),
+        title = paste("Comparative Analysis of", metric, "(Boxplot)"),
         subtitle = paste(
           "Horizontal axis:", x_lab,
-          "| Facet rows:", ifelse(row_var == "T_fac", "T", "N"),
+          "| Facet rows:", row_var,
           "| Limits:",
           if (metric == "Bias") paste0("[", cap_min, ", ", cap_max, "]")
           else paste0("[0, ", cap_max, "]")
@@ -990,16 +1057,219 @@ server <- function(input, output, session) {
       theme(
         legend.position   = "bottom",
         plot.title        = element_text(face = "bold", size = 16, color = "#000000"),
-        axis.text.x       = element_text(angle = 45, hjust = 1),
+        axis.text.x       = element_text(angle = 0, hjust = 1),
         panel.grid.minor  = element_blank(),
         panel.grid.major  = element_line(color = "#f0f0f0")
       ) +
       scale_fill_manual(values = method_colors)
     
-    if (row_var == "T_fac") {
-      p <- p + facet_grid(T_fac ~ param_lab, scales = "free_y")
+    if (row_var == "none") {
+      p <- p + facet_wrap(~ param_lab, scales = "free_y")
     } else {
-      p <- p + facet_grid(N_fac ~ param_lab, scales = "free_y")
+      p <- p + facet_grid(as.formula(paste(row_var, "~ param_lab")),
+                          scales = "free_y")
+    }
+    
+    p
+  }
+  
+  # Helper: comparison bar plot (median + labels)
+  make_comparison_bar_plot <- function(dat, metric, method_colors,
+                                       x_var, row_var, cap_min, cap_max) {
+    
+    dat_clean <- dat %>%
+      filter(!is.na(.data[[metric]]))
+    
+    if (metric == "Bias") {
+      dat_clean <- dat_clean %>%
+        filter(.data[[metric]] >= cap_min,
+               .data[[metric]] <= cap_max)
+    } else {
+      dat_clean <- dat_clean %>%
+        filter(.data[[metric]] >= 0,
+               .data[[metric]] <= cap_max)
+    }
+    
+    if (nrow(dat_clean) == 0) {
+      return(
+        ggplot() +
+          labs(title = "No data within selected min/max limits") +
+          theme_bw()
+      )
+    }
+    
+    x_lab_map <- c(
+      N_fac     = "N",
+      T_fac     = "T",
+      NT_fac    = "N × T",
+      delta_fac = "Delta (δ)",
+      tau_fac   = "Tau (τ)",
+      eta_fac   = "Eta (η)"
+    )
+    x_lab <- x_lab_map[[x_var]]
+    
+    group_vars <- c("method", "param_lab", x_var)
+    if (row_var != "none") group_vars <- c(group_vars, row_var)
+    
+    bar_dat <- dat_clean %>%
+      group_by(across(all_of(group_vars))) %>%
+      summarise(
+        Median = median(.data[[metric]], na.rm = TRUE),
+        .groups = "drop"
+      )
+    
+    p <- ggplot(
+      bar_dat,
+      aes(x = .data[[x_var]], y = Median, fill = method)
+    ) +
+      geom_col(position = position_dodge(width = 0.8), alpha = 0.85) +
+      geom_text(
+        aes(label = round(Median, 3)),
+        position = position_dodge(width = 0.8),
+        angle = 90,
+        hjust = -0.3,
+        nudge_y = 0.03 * max(bar_dat$Median),
+        size = 3,
+        fontface = "bold"
+      ) +
+      labs(
+        x = x_lab,
+        y = paste("Median", metric),
+        fill = "Method",
+        title = paste("Comparative Analysis of", metric, "(Bar plot, Median)"),
+        subtitle = paste(
+          "Horizontal axis:", x_lab,
+          "| Facet rows:", row_var,
+          "| Bars show median", metric
+        )
+      ) +
+      theme_bw(base_size = 14) +
+      theme(
+        legend.position   = "bottom",
+        plot.title        = element_text(face = "bold", size = 16, color = "#000000"),
+        axis.text.x       = element_text(angle = 0, hjust = 1),
+        panel.grid.minor  = element_blank(),
+        panel.grid.major  = element_line(color = "#f0f0f0"),
+        plot.margin       = margin(15, 10, 10, 10)
+      ) +
+      scale_fill_manual(values = method_colors) +
+      coord_cartesian(clip = "off")
+    
+    if (row_var == "none") {
+      p <- p + facet_wrap(~ param_lab, scales = "free_y")
+    } else {
+      p <- p + facet_grid(as.formula(paste(row_var, "~ param_lab")),
+                          scales = "free_y")
+    }
+    
+    if (metric == "Bias") {
+      p <- p + ylim(cap_min, cap_max)
+    } else {
+      p <- p + ylim(0, cap_max)
+    }
+    
+    p
+  }
+  
+  # Helper: comparison line plot (Comparative Analysis tab)
+  make_comparison_line_plot <- function(dat, metric, method_colors,
+                                        x_var, row_var, auto_var,
+                                        cap_min, cap_max) {
+    
+    dat_clean <- dat %>%
+      filter(!is.na(.data[[metric]]))
+    
+    if (metric == "Bias") {
+      dat_clean <- dat_clean %>%
+        filter(.data[[metric]] >= cap_min,
+               .data[[metric]] <= cap_max)
+    } else {
+      dat_clean <- dat_clean %>%
+        filter(.data[[metric]] >= 0,
+               .data[[metric]] <= cap_max)
+    }
+    
+    if (nrow(dat_clean) == 0) {
+      return(
+        ggplot() +
+          labs(title = "No data within selected min/max limits") +
+          theme_bw()
+      )
+    }
+    
+    x_lab_map <- c(
+      N_fac     = "N",
+      T_fac     = "T",
+      NT_fac    = "N × T",
+      delta_fac = "Delta (δ)",
+      tau_fac   = "Tau (τ)",
+      eta_fac   = "Eta (η)"
+    )
+    x_lab <- x_lab_map[[x_var]]
+    
+    auto_label_map <- c(
+      delta_fac = "Delta (δ)",
+      tau_fac   = "Tau (τ)",
+      eta_fac   = "Eta (η)"
+    )
+    auto_lab  <- if (auto_var == "none") "Method" else auto_label_map[[auto_var]]
+    
+    group_vars <- c("method", "param_lab", x_var)
+    if (auto_var != "none") group_vars <- c(group_vars, auto_var)
+    if (row_var  != "none") group_vars <- c(group_vars, row_var)
+    
+    line_dat <- dat_clean %>%
+      group_by(across(all_of(group_vars))) %>%
+      summarise(
+        Value = mean(.data[[metric]], na.rm = TRUE),
+        .groups = "drop"
+      )
+    
+    aes_mapping <- if (auto_var == "none") {
+      aes(x = .data[[x_var]],
+          y = Value,
+          color = method,
+          group = method)
+    } else {
+      aes(x = .data[[x_var]],
+          y = Value,
+          color   = .data[[auto_var]],
+          linetype = method,
+          group   = interaction(.data[[auto_var]], method))
+    }
+    
+    p <- ggplot(line_dat, aes_mapping) +
+      geom_line(size = 1) +
+      geom_point(size = 2) +
+      labs(
+        x = x_lab,
+        y = metric,
+        color   = auto_lab,
+        linetype = if (auto_var == "none") NULL else "Method",
+        title = paste("Line Plot of", metric, "vs", x_lab),
+        subtitle = "Lines are averaged across selected scenarios"
+      ) +
+      theme_bw(base_size = 14) +
+      theme(
+        legend.position   = "bottom",
+        plot.title        = element_text(face = "bold", size = 16),
+        plot.subtitle     = element_text(size = 12, color = "gray40"),
+        axis.text.x       = element_text(angle = 0, hjust = 1),
+        panel.grid.minor  = element_blank(),
+        panel.grid.major  = element_line(color = "#f0f0f0")
+      )
+    
+    if (row_var == "none") {
+      p <- p + facet_wrap(~ param_lab, scales = "free_y")
+    } else {
+      p <- p + facet_grid(as.formula(paste(row_var, "~ param_lab")),
+                          scales = "free_y")
+    }
+    
+    if (metric == "Bias") {
+      p <- p + ylim(cap_min, cap_max)
+    } else {
+      p <- p + ylim(0, cap_max)
     }
     
     p
@@ -1024,9 +1294,21 @@ server <- function(input, output, session) {
   output$comparison_plot <- renderPlot({
     dat <- summary_stats_reactive()
     req(nrow(dat) > 0)
-    make_comparison_plot(dat, input$comp_metric, method_colors,
-                         input$comp_x, input$comp_row,
-                         input$comp_min, input$comp_cap)
+    
+    if (input$comp_plot_type == "box") {
+      make_comparison_box_plot(dat, input$comp_metric, method_colors,
+                               input$comp_x, input$comp_row,
+                               input$comp_min, input$comp_cap)
+    } else if (input$comp_plot_type == "bar") {
+      make_comparison_bar_plot(dat, input$comp_metric, method_colors,
+                               input$comp_x, input$comp_row,
+                               input$comp_min, input$comp_cap)
+    } else {
+      make_comparison_line_plot(dat, input$comp_metric, method_colors,
+                                input$comp_x, input$comp_row,
+                                input$comp_auto,
+                                input$comp_min, input$comp_cap)
+    }
   })
   
   # ---- Tables ----
@@ -1243,9 +1525,20 @@ server <- function(input, output, session) {
   comparison_plot_reactive <- reactive({
     dat <- summary_stats_reactive()
     req(nrow(dat) > 0)
-    make_comparison_plot(dat, input$comp_metric, method_colors,
-                         input$comp_x, input$comp_row,
-                         input$comp_min, input$comp_cap)
+    if (input$comp_plot_type == "box") {
+      make_comparison_box_plot(dat, input$comp_metric, method_colors,
+                               input$comp_x, input$comp_row,
+                               input$comp_min, input$comp_cap)
+    } else if (input$comp_plot_type == "bar") {
+      make_comparison_bar_plot(dat, input$comp_metric, method_colors,
+                               input$comp_x, input$comp_row,
+                               input$comp_min, input$comp_cap)
+    } else {
+      make_comparison_line_plot(dat, input$comp_metric, method_colors,
+                                input$comp_x, input$comp_row,
+                                input$comp_auto,
+                                input$comp_min, input$comp_cap)
+    }
   })
   
   # ---- Download handlers: FIGURE & GLOBAL DATA ----
@@ -1306,6 +1599,7 @@ server <- function(input, output, session) {
       config_summary <- data.frame(
         Parameter = c("Selected Parameters", "Selected Methods",
                       "Delta Values", "Tau Values", "Eta Values",
+                      "N Filter", "T Filter",
                       "Export Time"),
         Value = c(
           paste(input$param,        collapse = ", "),
@@ -1313,6 +1607,8 @@ server <- function(input, output, session) {
           paste(input$delta_values, collapse = ", "),
           paste(input$tau_values,   collapse = ", "),
           paste(input$eta_values,   collapse = ", "),
+          paste(input$N_filter,     collapse = ", "),
+          paste(input$T_filter,     collapse = ", "),
           format(Sys.time(), "%Y-%m-%d %H:%M:%S")
         )
       )
@@ -1429,6 +1725,7 @@ server <- function(input, output, session) {
   )
 }
 
-
 shinyApp(ui = ui, server = server)
+
+
 

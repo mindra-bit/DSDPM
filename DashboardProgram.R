@@ -1,6 +1,6 @@
 # ============================================================
 # DSDPM Dashboard
-# Jaya and Folmer - 2025
+# Developed by Jaya and Folmer - 2025
 # ============================================================
 
 setwd("/Users/mindra/@Paper9")
@@ -16,6 +16,8 @@ library(Matrix)
 library(MASS)
 library(spdep)
 library(INLA)
+library(shinyjs)
+library(shinycssloaders)
 
 # ============================================================
 # ANALYSIS FUNCTIONS (same as your original code)
@@ -825,43 +827,451 @@ estimate_all_from_excel <- function(
 }
 
 # ============================================================
-# SHINY DASHBOARD
+# SHINY DASHBOARD - PROFESSIONAL VERSION
 # ============================================================
 
 ui <- dashboardPage(
   dashboardHeader(
-    title = "DSPM Analyzer",
-    titleWidth = 250
+    title = span(
+      icon("chart-line"), 
+      "DSDPM Analyzer",
+      style = "font-weight: bold; font-size: 22px;"
+    ),
+    titleWidth = 300,
+    tags$li(
+      class = "dropdown",
+      style = "padding: 8px 15px;",
+      span("Developed by Jaya and Folmer", style = "color: #ffffff; font-style: italic;")
+    )
   ),
   
   dashboardSidebar(
-    width = 250,
+    width = 300,
+    tags$div(
+      style = "padding: 20px 15px; background-color: #222d32;",
+      h4("DSDPM Analyzer", style = "color: #ffffff; margin: 0 0 10px 0;"),
+      p("Dynamic Spatial Panel Data Model", style = "color: #b8c7ce; font-size: 12px; margin: 0;"),
+      hr(style = "border-color: #4b646f; margin: 15px 0;"),
+      tags$p(
+        "Version 1.0 | 2025", 
+        style = "color: #8aa4af; font-size: 11px; text-align: center; margin-top: 20px;"
+      )
+    ),
     sidebarMenu(
-      menuItem("Dashboard",       tabName = "dashboard", icon = icon("dashboard")),
-      menuItem("Data Upload",     tabName = "upload",    icon = icon("upload")),
-      menuItem("Results",         tabName = "results",   icon = icon("table")),
-      menuItem("Visualizations",  tabName = "viz",       icon = icon("chart-bar")),
-      menuItem("About",           tabName = "about",     icon = icon("info-circle"))
+      id = "sidebar",
+      menuItem(
+        "📤 Data Upload", 
+        tabName = "upload", 
+        icon = icon("upload"),
+        selected = TRUE
+      ),
+      menuItem(
+        "🚀 Run Analysis", 
+        tabName = "run", 
+        icon = icon("play-circle")
+      ),
+      menuItem(
+        "📊 Dashboard", 
+        tabName = "dashboard", 
+        icon = icon("dashboard"),
+        badgeLabel = "Home", 
+        badgeColor = "green"
+      ),
+      menuItem(
+        "📈 Results", 
+        tabName = "results", 
+        icon = icon("table")
+      ),
+      menuItem(
+        "📊 Visualizations", 
+        tabName = "viz", 
+        icon = icon("chart-bar")
+      ),
+      menuItem(
+        "ℹ️ About", 
+        tabName = "about", 
+        icon = icon("info-circle")
+      )
     )
   ),
   
   dashboardBody(
+    useShinyjs(),
     tags$head(
       tags$style(HTML("
+        /* Main styling */
         .content-wrapper, .right-side {
-          background-color: #f4f4f4;
+          background-color: #f8f9fa;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        
+        /* Box styling */
         .box {
-          border-radius: 8px;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+          border-radius: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          border-top: 3px solid #3c8dbc;
+          margin-bottom: 20px;
         }
-        .info-box {
+        
+        .box-header {
+          border-radius: 10px 10px 0 0;
+          padding: 15px;
+          background-color: #ffffff !important;
+        }
+        
+        .box-title {
+          font-weight: 600;
+          font-size: 16px;
+          color: #333;
+        }
+        
+        /* Value boxes */
+        .small-box {
+          border-radius: 10px;
+          box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+          border-bottom: 4px solid rgba(0,0,0,0.1);
+        }
+        
+        .small-box .icon {
+          font-size: 70px;
+          opacity: 0.9;
+        }
+        
+        /* Buttons */
+        .btn-lg {
+          padding: 12px 30px;
+          font-size: 16px;
+          font-weight: 600;
           border-radius: 6px;
+        }
+        
+        .btn-success {
+          background: linear-gradient(to right, #00b09b, #96c93d);
+          border: none;
+        }
+        
+        .btn-primary {
+          background: linear-gradient(to right, #2196F3, #21CBF3);
+          border: none;
+        }
+        
+        .btn-warning {
+          background: linear-gradient(to right, #FF9800, #FFB74D);
+          border: none;
+        }
+        
+        /* Tables */
+        .dataTables_wrapper {
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        /* Status indicators */
+        .status-indicator {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 8px;
+        }
+        
+        .status-ready {
+          background-color: #4CAF50;
+        }
+        
+        .status-warning {
+          background-color: #FF9800;
+        }
+        
+        .status-error {
+          background-color: #F44336;
+        }
+        
+        /* Custom header */
+        .main-header .logo {
+          background-color: #222d32;
+          font-weight: bold;
+        }
+        
+        .main-header .navbar {
+          background-color: #3c8dbc;
+        }
+        
+        /* Progress bar */
+        .progress-bar {
+          border-radius: 3px;
+          background: linear-gradient(to right, #4CAF50, #8BC34A);
+        }
+        
+        /* Footer */
+        .footer {
+          position: fixed;
+          bottom: 0;
+          width: 100%;
+          background-color: #222d32;
+          color: #b8c7ce;
+          padding: 10px 20px;
+          text-align: center;
+          font-size: 12px;
+          border-top: 1px solid #4b646f;
+          z-index: 1000;
         }
       "))
     ),
     
     tabItems(
+      # ---------------------- Data Upload Tab ----------------
+      tabItem(
+        tabName = "upload",
+        
+        fluidRow(
+          column(
+            width = 12,
+            div(
+              class = "callout callout-info",
+              style = "background-color: #e8f4f8; border-left: 5px solid #3c8dbc; padding: 15px; margin-bottom: 20px; border-radius: 5px;",
+              h4(icon("info-circle"), " Instructions", style = "margin-top: 0;"),
+              p("1. Upload your panel data Excel file (containing id, time, y, x variables)", br(),
+                "2. Upload your spatial weights matrix W Excel file", br(),
+                "3. Specify the column names for your data", br(),
+                "4. Click 'Preview Data' to verify your uploads")
+            )
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = span(icon("database"), "Upload Panel Data"),
+            status = "primary",
+            solidHeader = TRUE,
+            width = 6,
+            collapsible = FALSE,
+            
+            fileInput(
+              "data_file",
+              "Choose Excel file containing panel data",
+              accept = c(".xlsx", ".xls"),
+              buttonLabel = "Browse...",
+              placeholder = "No file selected"
+            ),
+            
+            fluidRow(
+              column(6,
+                     numericInput(
+                       "data_sheet",
+                       "Sheet number",
+                       value = 1,
+                       min   = 1,
+                       width = "100%"
+                     )
+              ),
+              column(6,
+                     textInput(
+                       "id_col",
+                       "ID column name",
+                       value = "id",
+                       placeholder = "e.g., id, region_id",
+                       width = "100%"
+                     )
+              )
+            ),
+            
+            fluidRow(
+              column(6,
+                     textInput(
+                       "time_col",
+                       "Time column name",
+                       value = "time",
+                       placeholder = "e.g., time, year",
+                       width = "100%"
+                     )
+              ),
+              column(6,
+                     textInput(
+                       "y_col",
+                       "Dependent variable (y)",
+                       value = "y",
+                       placeholder = "e.g., y, gdp",
+                       width = "100%"
+                     )
+              )
+            ),
+            
+            textInput(
+              "x_col",
+              "Explanatory variable (x)",
+              value = "x",
+              placeholder = "e.g., x, investment",
+              width = "100%"
+            )
+          ),
+          
+          box(
+            title = span(icon("th"), "Upload Spatial Weights Matrix W"),
+            status = "warning",
+            solidHeader = TRUE,
+            width = 6,
+            collapsible = FALSE,
+            
+            fileInput(
+              "w_file",
+              "Choose Excel file containing W matrix",
+              accept = c(".xlsx", ".xls"),
+              buttonLabel = "Browse...",
+              placeholder = "No file selected"
+            ),
+            
+            numericInput(
+              "w_sheet",
+              "Sheet number (W matrix)",
+              value = 1,
+              min   = 1
+            ),
+            
+            hr(),
+            
+            div(
+              style = "text-align: center;",
+              actionButton(
+                "preview_data",
+                span(icon("eye"), "Preview Data & W Matrix"),
+                class = "btn-primary",
+                width = "100%",
+                style = "margin-bottom: 10px;"
+              ),
+              
+              div(
+                id = "upload_status",
+                style = "margin-top: 10px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;",
+                uiOutput("status_panel")
+              )
+            )
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = span(icon("table"), "Panel Data Preview"),
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            withSpinner(
+              DT::dataTableOutput("data_preview"),
+              type = 4,
+              color = "#3c8dbc"
+            ),
+            footer = textOutput("data_info")
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = span(icon("project-diagram"), "Spatial Weights Matrix W Preview"),
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            withSpinner(
+              DT::dataTableOutput("w_preview"),
+              type = 4,
+              color = "#3c8dbc"
+            ),
+            footer = textOutput("w_matrix_info")
+          )
+        )
+      ),
+      
+      # ---------------------- Run Analysis Tab ----------------
+      tabItem(
+        tabName = "run",
+        
+        fluidRow(
+          column(
+            width = 12,
+            div(
+              class = "callout callout-success",
+              style = "background-color: #e8f6e8; border-left: 5px solid #4CAF50; padding: 15px; margin-bottom: 20px; border-radius: 5px;",
+              h4(icon("play-circle"), " Ready to Analyze", style = "margin-top: 0;"),
+              p("Click the button below to run the analysis. This will execute all three estimation methods (QMLE, GMM, INLA) and generate results.")
+            )
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = span(icon("rocket"), "Analysis Control Panel"),
+            status = "success",
+            solidHeader = TRUE,
+            width = 12,
+            
+            fluidRow(
+              column(
+                width = 6,
+                div(
+                  style = "text-align: center; padding: 30px;",
+                  h4("Run Full Analysis", style = "margin-bottom: 20px;"),
+                  actionButton(
+                    "run_analysis",
+                    span(icon("play"), " Start Analysis"),
+                    class = "btn-success btn-lg",
+                    style = "padding: 15px 40px; font-size: 18px;"
+                  ),
+                  br(), br(),
+                  uiOutput("analysis_progress")
+                )
+              ),
+              column(
+                width = 6,
+                div(
+                  style = "padding: 20px; border-left: 1px solid #eee;",
+                  h4(icon("clipboard-check"), "Checklist"),
+                  tags$ul(
+                    style = "list-style-type: none; padding-left: 0;",
+                    tags$li(
+                      style = "margin-bottom: 10px;",
+                      uiOutput("checklist_panel")
+                    ),
+                    tags$li(
+                      style = "margin-bottom: 10px;",
+                      uiOutput("checklist_w")
+                    ),
+                    tags$li(
+                      style = "margin-bottom: 10px;",
+                      uiOutput("checklist_analysis")
+                    )
+                  ),
+                  hr(),
+                  h5("Methods to be executed:"),
+                  tags$span(class = "label label-primary", "QMLE"),
+                  tags$span(class = "label label-warning", "GMM"),
+                  tags$span(class = "label label-success", "INLA")
+                )
+              )
+            ),
+            
+            hr(),
+            
+            uiOutput("analysis_status_box")
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = span(icon("history"), "Analysis Log"),
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            collapsible = TRUE,
+            collapsed = FALSE,
+            verbatimTextOutput("analysis_log")
+          )
+        )
+      ),
+      
       # ---------------------- Dashboard Tab ------------------
       tabItem(
         tabName = "dashboard",
@@ -874,104 +1284,41 @@ ui <- dashboardPage(
         ),
         
         fluidRow(
-          box(
-            title = "Quick Analysis",
-            status = "primary",
-            solidHeader = TRUE,
-            width = 12,
-            
-            actionButton(
-              "run_analysis",
-              "Run Full Analysis",
-              icon  = icon("play"),
-              class = "btn-success btn-lg"
-            ),
-            br(), br(),
-            textOutput("analysis_status")
-          )
-        ),
-        
-        fluidRow(
-          box(
-            title = "Model Comparison",
-            status = "info",
-            solidHeader = TRUE,
-            width = 12,
-            plotlyOutput("model_comparison_plot")
-          )
-        )
-      ),
-      
-      # ---------------------- Data Upload Tab ----------------
-      tabItem(
-        tabName = "upload",
-        
-        fluidRow(
-          box(
-            title = "Upload Panel Data",
-            status = "primary",
-            solidHeader = TRUE,
-            width = 6,
-            
-            fileInput(
-              "data_file",
-              "Choose Excel file containing panel data",
-              accept = c(".xlsx")
-            ),
-            numericInput(
-              "data_sheet",
-              "Sheet number (panel data)",
-              value = 1,
-              min   = 1
-            ),
-            textInput("id_col",   "ID column name",       value = "id"),
-            textInput("time_col", "Time column name",     value = "time"),
-            textInput("y_col",    "Dependent variable (y)", value = "y"),
-            textInput("x_col",    "Explanatory variable (x)", value = "x")
-          ),
-          
-          box(
-            title = "Upload W Matrix",
-            status = "warning",
-            solidHeader = TRUE,
-            width = 6,
-            
-            fileInput(
-              "w_file",
-              "Choose Excel file containing W matrix",
-              accept = c(".xlsx")
-            ),
-            numericInput(
-              "w_sheet",
-              "Sheet number (W matrix)",
-              value = 1,
-              min   = 1
-            ),
-            actionButton(
-              "preview_data",
-              "Preview Data & W Matrix",
-              icon = icon("eye")
+          column(
+            width = 8,
+            box(
+              title = span(icon("chart-line"), "Model Comparison"),
+              status = "info",
+              solidHeader = TRUE,
+              width = 12,
+              withSpinner(
+                plotlyOutput("model_comparison_plot"),
+                type = 4,
+                color = "#3c8dbc"
+              )
             )
-          )
-        ),
-        
-        fluidRow(
-          box(
-            title = "Panel Data Preview",
-            status = "info",
-            solidHeader = TRUE,
-            width = 12,
-            DT::dataTableOutput("data_preview")
-          )
-        ),
-        
-        fluidRow(
-          box(
-            title = "W Matrix Preview",
-            status = "info",
-            solidHeader = TRUE,
-            width = 12,
-            DT::dataTableOutput("w_preview")
+          ),
+          column(
+            width = 4,
+            box(
+              title = span(icon("tachometer-alt"), "Quick Stats"),
+              status = "primary",
+              solidHeader = TRUE,
+              width = 12,
+              uiOutput("quick_stats")
+            ),
+            box(
+              title = span(icon("lightbulb"), "Tips"),
+              status = "warning",
+              solidHeader = TRUE,
+              width = 12,
+              tags$ul(
+                tags$li("Check the Results tab for detailed parameter estimates"),
+                tags$li("Use Visualizations tab for interactive plots"),
+                tags$li("All results can be downloaded from the Results tab"),
+                tags$li("Make sure your W matrix is properly standardized")
+              )
+            )
           )
         )
       ),
@@ -982,21 +1329,35 @@ ui <- dashboardPage(
         
         fluidRow(
           box(
-            title = "Estimation Results",
+            title = span(icon("table"), "Estimation Results"),
             status = "success",
             solidHeader = TRUE,
             width = 12,
-            DT::dataTableOutput("results_table")
+            collapsible = TRUE,
+            div(
+              style = "margin-bottom: 15px;",
+              downloadButton("download_results", "Download Results (CSV)", class = "btn-primary"),
+              downloadButton("download_report", "Download Report (HTML)", class = "btn-success", style = "margin-left: 10px;")
+            ),
+            withSpinner(
+              DT::dataTableOutput("results_table"),
+              type = 4,
+              color = "#3c8dbc"
+            )
           )
         ),
         
         fluidRow(
           box(
-            title = "Parameter Summary",
+            title = span(icon("fire"), "Parameter Heatmap"),
             status = "info",
             solidHeader = TRUE,
             width = 12,
-            plotlyOutput("parameter_heatmap")
+            withSpinner(
+              plotlyOutput("parameter_heatmap"),
+              type = 4,
+              color = "#3c8dbc"
+            )
           )
         )
       ),
@@ -1007,28 +1368,76 @@ ui <- dashboardPage(
         
         fluidRow(
           box(
-            title = "Spatial Parameters",
+            title = span(icon("map-marked-alt"), "Spatial Parameters"),
             status = "primary",
             solidHeader = TRUE,
             width = 6,
-            plotlyOutput("spatial_plot")
+            withSpinner(
+              plotlyOutput("spatial_plot"),
+              type = 4,
+              color = "#3c8dbc"
+            )
           ),
           box(
-            title = "Temporal Parameters",
+            title = span(icon("clock"), "Temporal Parameters"),
             status = "warning",
             solidHeader = TRUE,
             width = 6,
-            plotlyOutput("temporal_plot")
+            withSpinner(
+              plotlyOutput("temporal_plot"),
+              type = 4,
+              color = "#3c8dbc"
+            )
           )
         ),
         
         fluidRow(
           box(
-            title = "Beta Coefficients",
+            title = span(icon("chart-bar"), "Beta Coefficients Comparison"),
             status = "success",
             solidHeader = TRUE,
             width = 12,
-            plotlyOutput("beta_plot")
+            withSpinner(
+              plotlyOutput("beta_plot"),
+              type = 4,
+              color = "#3c8dbc"
+            )
+          )
+        ),
+        
+        fluidRow(
+          box(
+            title = span(icon("sliders-h"), "Interactive Controls"),
+            status = "info",
+            solidHeader = TRUE,
+            width = 12,
+            fluidRow(
+              column(4,
+                     selectInput(
+                       "plot_type",
+                       "Select Plot Type:",
+                       choices = c("Bar Chart", "Line Chart", "Scatter Plot"),
+                       selected = "Bar Chart"
+                     )
+              ),
+              column(4,
+                     checkboxGroupInput(
+                       "methods_show",
+                       "Show Methods:",
+                       choices = c("QMLE", "GMM", "INLA"),
+                       selected = c("QMLE", "GMM", "INLA")
+                     )
+              ),
+              column(4,
+                     sliderInput(
+                       "font_size",
+                       "Font Size:",
+                       min = 10,
+                       max = 20,
+                       value = 14
+                     )
+              )
+            )
           )
         )
       ),
@@ -1039,43 +1448,96 @@ ui <- dashboardPage(
         
         fluidRow(
           box(
-            title = "About DSPM Analyzer",
+            title = span(icon("info-circle"), "About DSDPM Analyzer"),
             status = "info",
             solidHeader = TRUE,
             width = 12,
             
             h3("Dynamic Spatial Panel Model Analyzer"),
-            p("This dashboard implements three estimation methods for Dynamic Spatial Panel Models:"),
-            tags$ul(
-              tags$li(
-                tags$strong("QMLE: "),
-                "Quasi-Maximum Likelihood Estimation."
+            p("This dashboard implements three state-of-the-art estimation methods for Dynamic Spatial Panel Models (DSPM)."),
+            
+            hr(),
+            
+            h4(icon("cogs"), " Estimation Methods"),
+            fluidRow(
+              column(4,
+                     div(
+                       class = "panel panel-primary",
+                       style = "border: 1px solid #ddd; border-radius: 5px; padding: 15px; height: 200px;",
+                       h5(icon("calculator"), " QMLE", style = "color: #3c8dbc;"),
+                       p("Quasi-Maximum Likelihood Estimation provides efficient parameter estimates for spatial panel models."),
+                       tags$small("Recommended for: Balanced panels with normal errors")
+                     )
               ),
-              tags$li(
-                tags$strong("GMM: "),
-                "Generalized Method of Moments."
+              column(4,
+                     div(
+                       class = "panel panel-warning",
+                       style = "border: 1px solid #ddd; border-radius: 5px; padding: 15px; height: 200px;",
+                       h5(icon("balance-scale"), " GMM", style = "color: #f39c12;"),
+                       p("Generalized Method of Moments offers robust estimation without distributional assumptions."),
+                       tags$small("Recommended for: Large samples, heteroskedastic errors")
+                     )
               ),
-              tags$li(
-                tags$strong("INLA: "),
-                "Integrated Nested Laplace Approximation (BYM2 + AR1)."
+              column(4,
+                     div(
+                       class = "panel panel-success",
+                       style = "border: 1px solid #ddd; border-radius: 5px; padding: 15px; height: 200px;",
+                       h5(icon("project-diagram"), " INLA", style = "color: #00a65a;"),
+                       p("Integrated Nested Laplace Approximation with BYM2 spatial and AR1 temporal effects."),
+                       tags$small("Recommended for: Bayesian inference, small samples")
+                     )
               )
             ),
-            p(
-              "The model estimates the following parameters: ",
-              tags$strong("delta, tau, eta, lambda, rho, kappa"),
-              " and the regression coefficients ",
-              tags$strong("beta_x, beta_wx, beta_x_lag, beta_wx_lag"), "."
-            ),
+            
             hr(),
-            h4("Data Requirements"),
+            
+            h4(icon("file-excel"), " Data Requirements"),
             tags$ul(
-              tags$li("Panel data in Excel format with ID, time, y, and x columns."),
-              tags$li("A spatial weights matrix W in Excel format (square matrix)."),
-              tags$li("Both balanced and unbalanced panel data are supported.")
+              tags$li("Panel data in Excel format with columns: ID, time, dependent variable (y), explanatory variable (x)"),
+              tags$li("Spatial weights matrix W in Excel format (must be square matrix)"),
+              tags$li("Both balanced and unbalanced panel data are supported"),
+              tags$li("Missing values should be left as empty cells in Excel")
+            ),
+            
+            hr(),
+            
+            h4(icon("users"), " Development Team"),
+            fluidRow(
+              column(6,
+                     div(
+                       style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
+                       h5("Jaya", style = "color: #3c8dbc;"),
+                       p("Lead Developer & Spatial Econometrics Specialist"),
+                       tags$small("Email: mindra@unpad.ac.id")
+                     )
+              ),
+              column(6,
+                     div(
+                       style = "background: #f8f9fa; padding: 15px; border-radius: 5px;",
+                       h5("Folmer", style = "color: #3c8dbc;"),
+                       p("Statistical Methods & Model Validation"),
+                       tags$small("Email: -")
+                     )
+              )
+            ),
+            
+            hr(),
+            
+            div(
+              style = "text-align: center; padding: 20px; background: #222d32; color: white; border-radius: 5px;",
+              h4("DSDPM Analyzer v1.0"),
+              p("© 2025 Developed by Jaya and Folmer"),
+              p("All rights reserved.")
             )
           )
         )
       )
+    ),
+    
+    # Footer
+    tags$div(
+      class = "footer",
+      "DSDPM Analyzer v1.0 | Developed by Jaya and Folmer | © 2025"
     )
   )
 )
@@ -1087,18 +1549,38 @@ server <- function(input, output, session) {
     panel_data    = NULL,
     w_matrix      = NULL,
     results       = NULL,
-    analysis_done = FALSE
+    analysis_done = FALSE,
+    analysis_log  = ""
   )
+  
+  # Add to log
+  add_to_log <- function(message) {
+    timestamp <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+    values$analysis_log <- paste(values$analysis_log, 
+                                 paste0("[", timestamp, "] ", message), 
+                                 sep = "\n")
+  }
   
   # Read panel data from uploaded file
   observeEvent(input$data_file, {
     req(input$data_file)
+    add_to_log(paste("Reading panel data from:", input$data_file$name))
+    
     tryCatch({
       values$panel_data <- read_excel(
         input$data_file$datapath,
         sheet = input$data_sheet
       )
+      add_to_log("✓ Panel data loaded successfully")
+      
+      # Update column names suggestions
+      updateTextInput(session, "id_col", value = names(values$panel_data)[1])
+      updateTextInput(session, "time_col", value = names(values$panel_data)[2])
+      updateTextInput(session, "y_col", value = names(values$panel_data)[3])
+      updateTextInput(session, "x_col", value = names(values$panel_data)[4])
+      
     }, error = function(e) {
+      add_to_log(paste("✗ Error reading panel data:", e$message))
       showNotification(
         paste("Error reading panel data:", e$message),
         type = "error"
@@ -1109,12 +1591,17 @@ server <- function(input, output, session) {
   # Read W matrix from uploaded file
   observeEvent(input$w_file, {
     req(input$w_file)
+    add_to_log(paste("Reading W matrix from:", input$w_file$name))
+    
     tryCatch({
       values$w_matrix <- read_W_matrix(
         input$w_file$datapath,
         sheet_W = input$w_sheet
       )
+      add_to_log("✓ W matrix loaded successfully")
+      
     }, error = function(e) {
+      add_to_log(paste("✗ Error reading W matrix:", e$message))
       showNotification(
         paste("Error reading W matrix:", e$message),
         type = "error"
@@ -1122,23 +1609,102 @@ server <- function(input, output, session) {
     })
   })
   
-  # Trigger for preview (logic is handled in outputs)
-  observeEvent(input$preview_data, {
-    req(values$panel_data, values$w_matrix)
+  # Update status panel
+  output$status_panel <- renderUI({
+    has_data <- !is.null(values$panel_data)
+    has_w <- !is.null(values$w_matrix)
+    
+    if (has_data && has_w) {
+      tags$div(
+        style = "color: #4CAF50;",
+        icon("check-circle"),
+        strong(" Ready for analysis"),
+        br(),
+        tags$small("Both panel data and W matrix are loaded")
+      )
+    } else if (has_data) {
+      tags$div(
+        style = "color: #FF9800;",
+        icon("exclamation-triangle"),
+        strong(" W matrix required"),
+        br(),
+        tags$small("Panel data loaded, waiting for W matrix")
+      )
+    } else if (has_w) {
+      tags$div(
+        style = "color: #FF9800;",
+        icon("exclamation-triangle"),
+        strong(" Panel data required"),
+        br(),
+        tags$small("W matrix loaded, waiting for panel data")
+      )
+    } else {
+      tags$div(
+        style = "color: #9E9E9E;",
+        icon("info-circle"),
+        strong(" Upload required"),
+        br(),
+        tags$small("Please upload both panel data and W matrix")
+      )
+    }
+  })
+  
+  # Checklist items
+  output$checklist_panel <- renderUI({
+    has_data <- !is.null(values$panel_data)
+    tagList(
+      icon("check-circle", class = ifelse(has_data, "text-success", "text-muted")),
+      " Panel data uploaded"
+    )
+  })
+  
+  output$checklist_w <- renderUI({
+    has_w <- !is.null(values$w_matrix)
+    tagList(
+      icon("check-circle", class = ifelse(has_w, "text-success", "text-muted")),
+      " W matrix uploaded"
+    )
+  })
+  
+  output$checklist_analysis <- renderUI({
+    tagList(
+      icon("check-circle", class = ifelse(values$analysis_done, "text-success", "text-muted")),
+      " Analysis completed"
+    )
   })
   
   # Run full analysis
   observeEvent(input$run_analysis, {
     req(values$panel_data, values$w_matrix)
     
-    showNotification(
-      "Running analysis... This may take a few minutes.",
-      type     = "message",
-      duration = NULL,
-      id       = "analysis"
-    )
+    add_to_log("Starting full analysis...")
+    
+    # Show progress modal
+    showModal(modalDialog(
+      title = span(icon("spinner", class = "fa-spin"), " Running Analysis"),
+      footer = NULL,
+      size = "m",
+      tags$div(
+        style = "text-align: center;",
+        h4("Please wait while the analysis runs..."),
+        br(),
+        tags$div(
+          class = "progress",
+          tags$div(
+            class = "progress-bar progress-bar-striped active",
+            role = "progressbar",
+            style = "width: 100%;",
+            "Processing"
+          )
+        ),
+        br(),
+        p("This may take several minutes depending on data size."),
+        p("Do not close this window.")
+      )
+    ))
     
     tryCatch({
+      # Run the analysis
       values$results <- estimate_all_from_excel(
         data_path  = input$data_file$datapath,
         W_path     = input$w_file$datapath,
@@ -1151,19 +1717,82 @@ server <- function(input, output, session) {
       )
       
       values$analysis_done <- TRUE
-      removeNotification("analysis")
+      add_to_log("✓ Analysis completed successfully!")
+      add_to_log(paste("Results generated for", nrow(values$results), "methods"))
+      
+      # Switch to results tab
+      updateTabItems(session, "sidebar", "results")
+      
+      removeModal()
+      
       showNotification(
-        "Analysis completed successfully!",
-        type = "message"
+        span(icon("check"), "Analysis completed successfully!"),
+        type = "success",
+        duration = 5
       )
       
     }, error = function(e) {
-      removeNotification("analysis")
+      removeModal()
+      add_to_log(paste("✗ Analysis failed:", e$message))
       showNotification(
-        paste("Analysis failed:", e$message),
-        type = "error"
+        span(icon("exclamation-triangle"), paste("Analysis failed:", e$message)),
+        type = "error",
+        duration = 10
       )
     })
+  })
+  
+  # Analysis progress UI
+  output$analysis_progress <- renderUI({
+    if (values$analysis_done) {
+      tags$div(
+        style = "color: #4CAF50;",
+        icon("check-circle", style = "font-size: 48px;"),
+        h4("Analysis Complete!"),
+        p("Results are ready in the Results tab.")
+      )
+    } else {
+      tags$div(
+        style = "color: #FF9800;",
+        icon("clock", style = "font-size: 48px;"),
+        h4("Ready to Run"),
+        p("Click the button above to start analysis")
+      )
+    }
+  })
+  
+  # Analysis status box
+  output$analysis_status_box <- renderUI({
+    if (values$analysis_done) {
+      tags$div(
+        class = "alert alert-success",
+        style = "margin-bottom: 0;",
+        icon("check-circle"),
+        strong(" Analysis Status: Complete"),
+        br(),
+        paste("Last run:", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
+        br(),
+        paste("Methods executed:", ifelse(!is.null(values$results), paste(values$results$method, collapse = ", "), "None"))
+      )
+    } else if (!is.null(values$panel_data) && !is.null(values$w_matrix)) {
+      tags$div(
+        class = "alert alert-info",
+        style = "margin-bottom: 0;",
+        icon("info-circle"),
+        strong(" Analysis Status: Ready"),
+        br(),
+        "All required data is uploaded. Click 'Start Analysis' to proceed."
+      )
+    } else {
+      tags$div(
+        class = "alert alert-warning",
+        style = "margin-bottom: 0;",
+        icon("exclamation-triangle"),
+        strong(" Analysis Status: Not Ready"),
+        br(),
+        "Please upload both panel data and W matrix first."
+      )
+    }
   })
   
   # ----------------- Value boxes on Dashboard ----------------
@@ -1174,7 +1803,7 @@ server <- function(input, output, session) {
     valueBox(
       n,
       "Spatial Units",
-      icon  = icon("map-marker"),
+      icon  = icon("map-marker-alt"),
       color = "blue"
     )
   })
@@ -1186,7 +1815,7 @@ server <- function(input, output, session) {
     valueBox(
       n,
       "Time Periods",
-      icon  = icon("clock"),
+      icon  = icon("calendar-alt"),
       color = "green"
     )
   })
@@ -1215,35 +1844,78 @@ server <- function(input, output, session) {
     )
   })
   
+  # Quick stats
+  output$quick_stats <- renderUI({
+    if (values$analysis_done && !is.null(values$results)) {
+      tags$div(
+        h5("Latest Analysis Summary"),
+        tags$table(
+          class = "table",
+          tags$tr(tags$td("Methods:"), tags$td(paste(values$results$method, collapse = ", "))),
+          tags$tr(tags$td("Parameters:"), tags$td(ncol(values$results) - 1)),
+          tags$tr(tags$td("Last run:"), tags$td(format(Sys.time(), "%H:%M:%S")))
+        )
+      )
+    } else {
+      tags$div(
+        h5("No analysis yet"),
+        p("Run analysis from the 'Run Analysis' tab")
+      )
+    }
+  })
+  
   # ----------------- Data previews ---------------------------
   output$data_preview <- DT::renderDataTable({
     req(values$panel_data)
     DT::datatable(
       head(values$panel_data, 20),
-      options = list(scrollX = TRUE, pageLength = 5)
+      options = list(
+        scrollX = TRUE,
+        pageLength = 10,
+        dom = 'Bfrtip',
+        buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+      ),
+      class = 'display nowrap'
     )
+  })
+  
+  output$data_info <- renderText({
+    if (!is.null(values$panel_data)) {
+      paste("Showing first 20 rows of", nrow(values$panel_data), 
+            "rows and", ncol(values$panel_data), "columns")
+    }
   })
   
   output$w_preview <- DT::renderDataTable({
     req(values$w_matrix)
+    preview_size <- min(10, nrow(values$w_matrix))
     DT::datatable(
       as.data.frame(
         values$w_matrix[
-          1:min(10, nrow(values$w_matrix)),
-          1:min(10, ncol(values$w_matrix))
+          1:preview_size,
+          1:preview_size
         ]
       ),
-      options = list(scrollX = TRUE, pageLength = 5)
+      options = list(
+        scrollX = TRUE,
+        pageLength = 10,
+        dom = 'Bfrtip',
+        buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+      ),
+      class = 'display nowrap'
     )
   })
   
-  # ----------------- Analysis status text --------------------
-  output$analysis_status <- renderText({
-    if (values$analysis_done) {
-      "Analysis completed successfully!"
-    } else {
-      "Click 'Run Full Analysis' to start estimation."
+  output$w_matrix_info <- renderText({
+    if (!is.null(values$w_matrix)) {
+      paste("W matrix:", nrow(values$w_matrix), "×", ncol(values$w_matrix), 
+            "(showing first 10×10)")
     }
+  })
+  
+  # ----------------- Analysis log ----------------------------
+  output$analysis_log <- renderText({
+    values$analysis_log
   })
   
   # ----------------- Results table ---------------------------
@@ -1251,14 +1923,64 @@ server <- function(input, output, session) {
     req(values$results)
     DT::datatable(
       values$results,
-      options  = list(scrollX = TRUE, pageLength = 10),
+      options  = list(
+        scrollX = TRUE,
+        pageLength = 10,
+        dom = 'Bfrtip',
+        buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+      ),
       rownames = FALSE
     ) %>%
       DT::formatRound(
         columns = sapply(values$results, is.numeric),
         digits  = 4
+      ) %>%
+      DT::formatStyle(
+        columns = names(values$results),
+        fontSize = '14px'
       )
   })
+  
+  # Download results
+  output$download_results <- downloadHandler(
+    filename = function() {
+      paste0("dsdpm_results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv")
+    },
+    content = function(file) {
+      write.csv(values$results, file, row.names = FALSE)
+    }
+  )
+  
+  output$download_report <- downloadHandler(
+    filename = function() {
+      paste0("dsdpm_report_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".html")
+    },
+    content = function(file) {
+      # Create a simple HTML report
+      report <- tags$html(
+        tags$head(
+          tags$title("DSDPM Analysis Report"),
+          tags$style(HTML("
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            h1 { color: #3c8dbc; }
+            h2 { color: #00a65a; }
+            table { border-collapse: collapse; width: 100%; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .method { font-weight: bold; }
+          "))
+        ),
+        tags$body(
+          h1("DSDPM Analysis Report"),
+          p("Generated: ", format(Sys.time(), "%Y-%m-%d %H:%M:%S")),
+          h2("Results"),
+          renderTable(values$results)
+        )
+      )
+      
+      save_html(report, file)
+    }
+  )
   
   # ----------------- Model comparison plot -------------------
   output$model_comparison_plot <- renderPlotly({
@@ -1275,16 +1997,25 @@ server <- function(input, output, session) {
       ))
     
     p <- ggplot(df_long, aes(x = parameter, y = value, fill = method)) +
-      geom_bar(stat = "identity", position = "dodge") +
+      geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
       labs(
         title = "Parameter Estimates by Method",
         x     = "Parameter",
-        y     = "Estimated Value"
+        y     = "Estimated Value",
+        fill  = "Method"
       ) +
-      theme_minimal() +
-      scale_fill_brewer(palette = "Set1")
+      theme_minimal(base_size = 14) +
+      scale_fill_brewer(palette = "Set1") +
+      theme(
+        legend.position = "bottom",
+        plot.title = element_text(hjust = 0.5, face = "bold")
+      )
     
-    ggplotly(p)
+    ggplotly(p) %>%
+      layout(
+        hoverlabel = list(bgcolor = "white", font = list(size = 12)),
+        margin = list(l = 50, r = 50, b = 50, t = 50)
+      )
   })
   
   # ----------------- Parameter heatmap -----------------------
@@ -1303,13 +2034,16 @@ server <- function(input, output, session) {
       y = rownames(df_wide),
       z = as.matrix(df_wide),
       type  = "heatmap",
-      colors = "RdYlBu",
-      hoverinfo = "x+y+z"
+      colorscale = "RdYlBu",
+      reversescale = TRUE,
+      hoverinfo = "x+y+z",
+      colorbar = list(title = "Value")
     ) %>%
       layout(
         title = "Parameter Estimates Heatmap",
-        xaxis = list(title = ""),
-        yaxis = list(title = "")
+        xaxis = list(title = "", tickangle = 45),
+        yaxis = list(title = ""),
+        margin = list(l = 100, r = 50, b = 100, t = 50)
       )
   })
   
@@ -1317,7 +2051,12 @@ server <- function(input, output, session) {
   output$spatial_plot <- renderPlotly({
     req(values$results)
     
+    # Filter selected methods
+    selected_methods <- input$methods_show
+    if (is.null(selected_methods)) selected_methods <- unique(values$results$method)
+    
     spatial_params <- values$results %>%
+      dplyr::filter(method %in% selected_methods) %>%
       dplyr::select(method, delta, lambda, kappa) %>%
       tidyr::pivot_longer(
         cols      = -method,
@@ -1325,24 +2064,59 @@ server <- function(input, output, session) {
         values_to = "value"
       )
     
-    p <- ggplot(spatial_params, aes(x = method, y = value, fill = parameter)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(
-        title = "Spatial Parameters (δ, λ, κ)",
-        x     = "Method",
-        y     = "Estimated Value"
-      ) +
-      theme_minimal() +
-      scale_fill_brewer(palette = "Set2")
+    plot_type <- input$plot_type
     
-    ggplotly(p)
+    if (plot_type == "Bar Chart") {
+      p <- ggplot(spatial_params, aes(x = method, y = value, fill = parameter)) +
+        geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
+        labs(
+          title = "Spatial Parameters (δ, λ, κ)",
+          x     = "Method",
+          y     = "Estimated Value",
+          fill  = "Parameter"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    } else if (plot_type == "Line Chart") {
+      p <- ggplot(spatial_params, aes(x = parameter, y = value, color = method, group = method)) +
+        geom_line(size = 1.5) +
+        geom_point(size = 3) +
+        labs(
+          title = "Spatial Parameters (δ, λ, κ)",
+          x     = "Parameter",
+          y     = "Estimated Value",
+          color = "Method"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    } else {
+      p <- ggplot(spatial_params, aes(x = method, y = value, color = parameter, size = value)) +
+        geom_point() +
+        labs(
+          title = "Spatial Parameters (δ, λ, κ)",
+          x     = "Method",
+          y     = "Estimated Value",
+          color = "Parameter",
+          size  = "Value"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    }
+    
+    ggplotly(p) %>%
+      layout(
+        hoverlabel = list(bgcolor = "white", font = list(size = 12)),
+        margin = list(l = 50, r = 50, b = 50, t = 50)
+      )
   })
   
   # ----------------- Temporal parameters plot ----------------
   output$temporal_plot <- renderPlotly({
     req(values$results)
     
+    # Filter selected methods
+    selected_methods <- input$methods_show
+    if (is.null(selected_methods)) selected_methods <- unique(values$results$method)
+    
     temporal_params <- values$results %>%
+      dplyr::filter(method %in% selected_methods) %>%
       dplyr::select(method, tau, eta, rho) %>%
       tidyr::pivot_longer(
         cols      = -method,
@@ -1350,24 +2124,60 @@ server <- function(input, output, session) {
         values_to = "value"
       )
     
-    p <- ggplot(temporal_params, aes(x = method, y = value, fill = parameter)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(
-        title = "Temporal Parameters (τ, η, ρ)",
-        x     = "Method",
-        y     = "Estimated Value"
-      ) +
-      theme_minimal() +
-      scale_fill_brewer(palette = "Set3")
+    plot_type <- input$plot_type
     
-    ggplotly(p)
+    if (plot_type == "Bar Chart") {
+      p <- ggplot(temporal_params, aes(x = method, y = value, fill = parameter)) +
+        geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
+        labs(
+          title = "Temporal Parameters (τ, η, ρ)",
+          x     = "Method",
+          y     = "Estimated Value",
+          fill  = "Parameter"
+        ) +
+        theme_minimal(base_size = input$font_size) +
+        scale_fill_brewer(palette = "Set3")
+    } else if (plot_type == "Line Chart") {
+      p <- ggplot(temporal_params, aes(x = parameter, y = value, color = method, group = method)) +
+        geom_line(size = 1.5) +
+        geom_point(size = 3) +
+        labs(
+          title = "Temporal Parameters (τ, η, ρ)",
+          x     = "Parameter",
+          y     = "Estimated Value",
+          color = "Method"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    } else {
+      p <- ggplot(temporal_params, aes(x = method, y = value, color = parameter, size = value)) +
+        geom_point() +
+        labs(
+          title = "Temporal Parameters (τ, η, ρ)",
+          x     = "Method",
+          y     = "Estimated Value",
+          color = "Parameter",
+          size  = "Value"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    }
+    
+    ggplotly(p) %>%
+      layout(
+        hoverlabel = list(bgcolor = "white", font = list(size = 12)),
+        margin = list(l = 50, r = 50, b = 50, t = 50)
+      )
   })
   
   # ----------------- Beta coefficients plot ------------------
   output$beta_plot <- renderPlotly({
     req(values$results)
     
+    # Filter selected methods
+    selected_methods <- input$methods_show
+    if (is.null(selected_methods)) selected_methods <- unique(values$results$method)
+    
     beta_params <- values$results %>%
+      dplyr::filter(method %in% selected_methods) %>%
       dplyr::select(method, beta_x, beta_wx, beta_x_lag, beta_wx_lag) %>%
       tidyr::pivot_longer(
         cols      = -method,
@@ -1375,22 +2185,52 @@ server <- function(input, output, session) {
         values_to = "value"
       )
     
-    p <- ggplot(beta_params, aes(x = parameter, y = value, fill = method)) +
-      geom_bar(stat = "identity", position = "dodge") +
-      labs(
-        title = "Beta Coefficients",
-        x     = "Coefficient",
-        y     = "Estimated Value"
-      ) +
-      theme_minimal() +
-      scale_fill_brewer(palette = "Set1") +
-      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    plot_type <- input$plot_type
     
-    ggplotly(p)
+    if (plot_type == "Bar Chart") {
+      p <- ggplot(beta_params, aes(x = parameter, y = value, fill = method)) +
+        geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
+        labs(
+          title = "Beta Coefficients",
+          x     = "Coefficient",
+          y     = "Estimated Value",
+          fill  = "Method"
+        ) +
+        theme_minimal(base_size = input$font_size) +
+        scale_fill_brewer(palette = "Set1") +
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    } else if (plot_type == "Line Chart") {
+      p <- ggplot(beta_params, aes(x = method, y = value, color = parameter, group = parameter)) +
+        geom_line(size = 1.5) +
+        geom_point(size = 3) +
+        labs(
+          title = "Beta Coefficients",
+          x     = "Method",
+          y     = "Estimated Value",
+          color = "Coefficient"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    } else {
+      p <- ggplot(beta_params, aes(x = method, y = value, color = parameter, size = abs(value))) +
+        geom_point(alpha = 0.7) +
+        labs(
+          title = "Beta Coefficients",
+          x     = "Method",
+          y     = "Estimated Value",
+          color = "Coefficient",
+          size  = "Absolute Value"
+        ) +
+        theme_minimal(base_size = input$font_size)
+    }
+    
+    ggplotly(p) %>%
+      layout(
+        hoverlabel = list(bgcolor = "white", font = list(size = 12)),
+        margin = list(l = 50, r = 50, b = 100, t = 50)
+      )
   })
 }
 
 # Run the application
 shinyApp(ui = ui, server = server)
-
 
