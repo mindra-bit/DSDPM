@@ -45,7 +45,7 @@ create_theme <- create_theme(
 # ------------------------------------------------------------
 # 1. READ & PREPARE DATA
 # ------------------------------------------------------------
-df_raw <- read_excel("RekapFullRev.xlsx")
+df_raw <- read_excel("RekapFull.xlsx")
 
 params <- c(
   "delta", "tau", "eta",
