@@ -1,14 +1,15 @@
-Improving Inference in the Dynamic Spatial Durbin Panel Model Using Bayesian Analysis
-Simulation Evidence from a Comparison with Maximum Likelihood and the General Method of Moments
-📌 Overview
+Bayesian Estimation of the Dynamic Spatial Durbin Panel Model Theory and Simulation Evidence from a Comparison with Quasi-Maximum Likelihood and the General Method of Moments 
+
+
+Overview
 
 This repository contains complete R code and reproducible workflows used in the manuscript:
 
-“Improving Inference in the Dynamic Spatial Durbin Panel Model Using Bayesian Analysis: Simulation Evidence from a Comparison with Maximum Likelihood and the General Method of Moments.”
+“Bayesian Estimation of the Dynamic Spatial Durbin Panel Model Theory and Simulation Evidence from a Comparison with Quasi-Maximum Likelihood and the General Method of Moments ”
 
 The scripts support full replication of Monte Carlo simulations, model estimation (QMLE, GMM, and Bayesian INLA), and interactive visualization through Shiny dashboards.
 
-🧠 Purpose of the Repository
+Purpose of the Repository
 
 The goal of this repository is to make the full research workflow transparent and reusable, including:
 
@@ -31,7 +32,7 @@ All components are modular and can be reused or extended for future methodologic
 ├── W.xlsx                  → Example spatial weight matrix
 └── RekapFull.xlsx          → Simulation output summary used for final analysis
 
-🚀 How to Use
+How to Use
 1️⃣ Install Required Packages
 install.packages(c("Matrix","MASS","spdep","dplyr","tidyr","ggplot2",
                    "openxlsx","DT","shiny","shinydashboard","plotly"))
@@ -58,12 +59,10 @@ Produces tables and figures used in the manuscript
 3️⃣ Run the Shiny Dashboard (Estimation Interface)
 source("DashboardProgram.R")
 
-
 This version allows users to run the DSDPM interactively using uploaded data or the included examples.
 
 4️⃣ Run the Simulation Analysis Dashboard
 source("DashboardResult.R")
-
 
 This dashboard visualizes estimator performance (bias, MAE, RMSE, parameter distributions) based on results from the paper or user-generated simulations.
 
@@ -71,10 +70,9 @@ This dashboard visualizes estimator performance (bias, MAE, RMSE, parameter dist
 source("SimulationCode.R")
 run_simulation(reps = 100)
 
-
 Outputs will be saved in formatted files similar to RekapFull.xlsx.
 
-📊 Outputs
+Outputs
 
 Running the scripts generates:
 
@@ -86,17 +84,16 @@ Boxplots, density plots, and panel-grid diagnostics
 
 Exportable tables for supplementary materials
 
-📖 Citation
+Citation
 
 Please cite the paper if you use this repository:
 
-Jaya, I. G. N. M., & Folmer, H. (2025). Improving Inference in the Dynamic Spatial Durbin Panel Model 
-Using Bayesian Analysis: Simulation Evidence from a Comparison with Maximum Likelihood and the General 
-Method of Moments.
+Jaya, I. G. N. M., & Folmer, H. (2026). Bayesian Estimation of the Dynamic Spatial Durbin Panel Model Theory and Simulation Evidence from a Comparison with Quasi-Maximum Likelihood and the General Method of Moments.
 
-📬 Contact
+Contact
 Author	Affiliation	Email
-I Gede Nyoman Mindra Jaya	Universitas Padjadjaran	mindra@unpad.ac.id
+I Gede Nyoman Mindra Jaya	Universitas Padjadjaran	
+mindra@unpad.ac.id
 
 Repository URL:
 🔗 https://github.com/mindra-bit/DSDPM
