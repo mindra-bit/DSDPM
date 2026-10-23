@@ -1,0 +1,4 @@
+outputs/
+*.RData
+*.Rhistory
+.DS_Store
