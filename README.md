@@ -1,3 +1,8 @@
+> ## Final revised-paper code (R = 300)
+> The code used for the revised paper is in **[final_R300/](./final_R300/)**.  
+> It contains the final v3.4 implementation, the 92-scenario × 300-replication main Monte Carlo runner, the separate 8-scenario × 100-replication INLA–MCMC validation, and identification diagnostics.  
+> Root-level scripts are retained as earlier/legacy versions for reproducibility.
+
 **Bayesian Estimation of the Dynamic Spatial Durbin Panel Model Theory and Simulation Evidence from a Comparison with Quasi-Maximum Likelihood and the General Method of Moments**
 
 
